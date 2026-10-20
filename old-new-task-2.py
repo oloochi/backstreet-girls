@@ -19,30 +19,29 @@ if not WORD_LIST and DEBUG_MODE:
     WORD_LIST = [f"sample_{i}" for i in range(75)]
 
 # ==========================================
-# 2. TRIAL SCHEDULE GENERATOR (STRATIFIED MEMORY + STREAK CAP = 4)
+# 2. TRIAL SCHEDULE GENERATOR (DYNAMIC SIZE)
 # ==========================================
 def generate_trial_schedule(words, max_run=4, min_lag=2, max_attempts=2000):
     """
-    Continuous recognition schedule that:
-    1. Tests Short-Term (lag 2-7), Medium-Term (lag 15-35), and Long-Term (lag 60-100+) memory.
-    2. Staggers New word arrivals so the end of the test is not flooded with Old words.
-    3. Caps streaks at 4 to prevent motor priming without creating predictable alternation.
+    Dynamically generates a 2*N continuous recognition schedule for any list size N.
+    Automatically scales short, medium, and long lag tiers and prevents deadlocks.
     """
+    n = len(words)
+    total_trials = n * 2
+    n_tier = max(1, n // 3)
+
     for _ in range(max_attempts):
         w_list = list(words)
         np.random.shuffle(w_list)
 
-        # 1. Partition 75 words into 3 retention tiers (25 each)
-        short_words = w_list[:25]
-        med_words = w_list[25:50]
-        long_words = w_list[50:75]
+        short_words = w_list[:n_tier]
+        med_words = w_list[n_tier:2 * n_tier]
+        long_words = w_list[2 * n_tier:]
 
-        # 2. Stagger arrival of New words:
-        # Long-tier words enter early so they have time to mature for 60-100 trials.
-        # Short-tier words are sprinkled across all phases (including trials 100-140).
-        p1 = long_words[:18] + med_words[:10] + short_words[:8]       # Trials 1-50
-        p2 = long_words[18:] + med_words[10:22] + short_words[8:17]   # Trials 51-100
-        p3 = med_words[22:] + short_words[17:]                        # Trials 101-150
+        # Stagger entrance: long-tier enters early, short-tier is distributed
+        p1 = long_words + med_words[:len(med_words)//2] + short_words[:len(short_words)//3]
+        p2 = med_words[len(med_words)//2:] + short_words[len(short_words)//3: 2*len(short_words)//3]
+        p3 = short_words[2*len(short_words)//3:]
         np.random.shuffle(p1)
         np.random.shuffle(p2)
         np.random.shuffle(p3)
@@ -53,34 +52,32 @@ def generate_trial_schedule(words, max_run=4, min_lag=2, max_attempts=2000):
         tier_map.update({w: 'med' for w in med_words})
         tier_map.update({w: 'long' for w in long_words})
 
-        active_repeats = {}  # word -> first_seen_index
+        active_repeats = {}
         failed = False
 
-        for t in range(150):
-            # Calculate elapsed lag for seen words
+        for t in range(total_trials):
             eligible = {
                 w: t - first_i - 1 
                 for w, first_i in active_repeats.items() 
                 if (t - first_i - 1) >= min_lag
             }
 
-            # Filter ready words based on target maturity
             ready = []
             for w, lag in eligible.items():
                 tier = tier_map[w]
-                if tier == 'short' and lag >= 2:
+                if tier == 'short' and lag >= min_lag:
                     ready.append((w, 1.0))
-                elif tier == 'med' and lag >= 12:
+                elif tier == 'med' and lag >= max(3, n_tier):
                     ready.append((w, 1.0))
-                elif tier == 'long' and (lag >= 45 or t >= 115):
+                elif tier == 'long' and (lag >= max(5, 2 * n_tier) or t >= int(0.70 * total_trials)):
                     ready.append((w, 2.0))
-                elif t >= 130:  # Final clearance
+                elif t >= int(0.85 * total_trials):
                     ready.append((w, 1.0))
 
             can_new = len(new_queue) > 0
             can_old = len(ready) > 0
 
-            # Streak constraint (strictly prevent 5 identical clicks in a row)
+            # Streak constraint
             if len(schedule) >= max_run:
                 recent = [x[1] for x in schedule[-max_run:]]
                 if all(s == "New" for s in recent):
@@ -92,7 +89,6 @@ def generate_trial_schedule(words, max_run=4, min_lag=2, max_attempts=2000):
                 failed = True
                 break
 
-            # Probabilistic balance based on remaining load
             if can_new and can_old:
                 rem_new = len(new_queue)
                 rem_old = len(active_repeats)
@@ -114,10 +110,10 @@ def generate_trial_schedule(words, max_run=4, min_lag=2, max_attempts=2000):
                 schedule.append((chosen, "New"))
                 active_repeats[chosen] = t
 
-        if not failed and len(schedule) == 150:
+        if not failed and len(schedule) == total_trials:
             return [{"word": w, "ground_truth": gt} for w, gt in schedule]
 
-    # Robust fallback
+    # Robust deterministic fallback
     schedule = []
     for w in words:
         schedule.append({"word": w, "ground_truth": "New"})
