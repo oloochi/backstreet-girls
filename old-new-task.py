@@ -8,7 +8,7 @@ import time
 # ==========================================
 # Insert your list of 75 unique words for this specific version/treatment below:
 WORD_LIST = [
-    # "word1", "word2", "word3", ...
+    ball, boss, buck, dirt, door, drop, east, flat, gold, hair, hole, lake, mess, mild, nest, park, post, rain, ring, yard, anger, beach, bench, brain, bread, brush, chain, chair, clock, crash, dress, flame, flesh, hotel, knife, mouth, paint, shirt, snake, train, bottle, bridge, bucket, butter, canyon, carpet, closet, danger, drawer, engine, finger, guitar, jungle, market, pencil, pocket, silver, spider, ticket, window, blanket, channel, feather, kitchen, station, village, hospital, mountain, railroad, sandwich, stranger, apartment, machinery, instrument, television
 ]
 
 # Set to True to allow the app to run with sample stimuli if WORD_LIST is empty
