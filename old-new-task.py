@@ -1,41 +1,40 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+import time
 
->>> import streamlit as st
-... import pandas as pd
-... import numpy as np
-... import time
-... 
-... # ==========================================
-... # 1. STIMULUS POOL CONFIGURATION
-... # ==========================================
-... # Insert your list of 75 unique words for this specific version/treatment below:
-... WORD_LIST = [
-...     # "word1", "word2", "word3", ...
-... ]
-... 
-... # Set to True to allow the app to run with sample stimuli if WORD_LIST is empty
-... DEBUG_MODE = False
-... if not WORD_LIST and DEBUG_MODE:
-...     WORD_LIST = [f"sample_{i}" for i in range(75)]
-... 
-... # ==========================================
-... # 2. TRIAL SCHEDULE GENERATOR
-... # ==========================================
-... def generate_trial_schedule(words, min_lag=2, max_attempts=1000):
-...     """
-...     Generates a 150-trial continuous recognition schedule:
-...     - 75 'New' presentations (first exposure)
-...     - 75 'Old' presentations (second exposure)
-...     - Enforces a minimum repetition lag (intervening items >= min_lag)
-...     """
-...     for _ in range(max_attempts):
-...         pool_new = list(words)
-...         np.random.shuffle(pool_new)
-...         
-...         schedule = []
-...         seen_words = []
-...         pending_repeats = []
-...         
-...         while pool_new or pending_repeats:
+# ==========================================
+# 1. STIMULUS POOL CONFIGURATION
+# ==========================================
+# Insert your list of 75 unique words for this specific version/treatment below:
+WORD_LIST = [
+    # "word1", "word2", "word3", ...
+]
+
+# Set to True to allow the app to run with sample stimuli if WORD_LIST is empty
+DEBUG_MODE = False
+if not WORD_LIST and DEBUG_MODE:
+    WORD_LIST = [f"sample_{i}" for i in range(75)]
+
+# ==========================================
+# 2. TRIAL SCHEDULE GENERATOR
+# ==========================================
+def generate_trial_schedule(words, min_lag=2, max_attempts=1000):
+    """
+    Generates a 150-trial continuous recognition schedule:
+    - 75 'New' presentations (first exposure)
+    - 75 'Old' presentations (second exposure)
+    - Enforces a minimum repetition lag (intervening items >= min_lag)
+    """
+    for _ in range(max_attempts):
+        pool_new = list(words)
+        np.random.shuffle(pool_new)
+        
+        schedule = []
+        seen_words = []
+        pending_repeats = []
+        
+        while pool_new or pending_repeats:
             valid_repeats = [
                 w for w in pending_repeats 
                 if (len(schedule) - schedule.index((w, "New")) - 1) >= min_lag
@@ -247,3 +246,4 @@ else:
         data=csv_data,
         file_name="recognition_memory_results.csv",
         mime="text/csv"
+    )
