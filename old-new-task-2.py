@@ -19,60 +19,112 @@ if not WORD_LIST and DEBUG_MODE:
     WORD_LIST = [f"sample_{i}" for i in range(75)]
 
 # ==========================================
-# 2. TRIAL SCHEDULE GENERATOR
+# 2. TRIAL SCHEDULE GENERATOR (STRATIFIED MEMORY + STREAK CAP = 4)
 # ==========================================
-def generate_trial_schedule(words, min_lag=2, max_attempts=1000):
+def generate_trial_schedule(words, max_run=4, min_lag=2, max_attempts=2000):
+    """
+    Continuous recognition schedule that:
+    1. Tests Short-Term (lag 2-7), Medium-Term (lag 15-35), and Long-Term (lag 60-100+) memory.
+    2. Staggers New word arrivals so the end of the test is not flooded with Old words.
+    3. Caps streaks at 4 to prevent motor priming without creating predictable alternation.
+    """
     for _ in range(max_attempts):
-        pool_new = list(words)
-        np.random.shuffle(pool_new)
-        
+        w_list = list(words)
+        np.random.shuffle(w_list)
+
+        # 1. Partition 75 words into 3 retention tiers (25 each)
+        short_words = w_list[:25]
+        med_words = w_list[25:50]
+        long_words = w_list[50:75]
+
+        # 2. Stagger arrival of New words:
+        # Long-tier words enter early so they have time to mature for 60-100 trials.
+        # Short-tier words are sprinkled across all phases (including trials 100-140).
+        p1 = long_words[:18] + med_words[:10] + short_words[:8]       # Trials 1-50
+        p2 = long_words[18:] + med_words[10:22] + short_words[8:17]   # Trials 51-100
+        p3 = med_words[22:] + short_words[17:]                        # Trials 101-150
+        np.random.shuffle(p1)
+        np.random.shuffle(p2)
+        np.random.shuffle(p3)
+        new_queue = p1 + p2 + p3
+
         schedule = []
-        pending_repeats = []
-        
-        while pool_new or pending_repeats:
-            valid_repeats = [
-                w for w in pending_repeats 
-                if (len(schedule) - schedule.index((w, "New")) - 1) >= min_lag
-            ]
-            
-            can_draw_new = len(pool_new) > 0
-            can_draw_old = len(valid_repeats) > 0
-            
-            if can_draw_new and can_draw_old:
-                p_old = len(valid_repeats) / (len(pool_new) + len(valid_repeats))
-                draw_old = np.random.rand() < p_old
-            elif can_draw_old:
-                draw_old = True
-            elif can_draw_new:
-                draw_old = False
-            else:
+        tier_map = {w: 'short' for w in short_words}
+        tier_map.update({w: 'med' for w in med_words})
+        tier_map.update({w: 'long' for w in long_words})
+
+        active_repeats = {}  # word -> first_seen_index
+        failed = False
+
+        for t in range(150):
+            # Calculate elapsed lag for seen words
+            eligible = {
+                w: t - first_i - 1 
+                for w, first_i in active_repeats.items() 
+                if (t - first_i - 1) >= min_lag
+            }
+
+            # Filter ready words based on target maturity
+            ready = []
+            for w, lag in eligible.items():
+                tier = tier_map[w]
+                if tier == 'short' and lag >= 2:
+                    ready.append((w, 1.0))
+                elif tier == 'med' and lag >= 12:
+                    ready.append((w, 1.0))
+                elif tier == 'long' and (lag >= 45 or t >= 115):
+                    ready.append((w, 2.0))
+                elif t >= 130:  # Final clearance
+                    ready.append((w, 1.0))
+
+            can_new = len(new_queue) > 0
+            can_old = len(ready) > 0
+
+            # Streak constraint (strictly prevent 5 identical clicks in a row)
+            if len(schedule) >= max_run:
+                recent = [x[1] for x in schedule[-max_run:]]
+                if all(s == "New" for s in recent):
+                    can_new = False
+                elif all(s == "Old" for s in recent):
+                    can_old = False
+
+            if not can_new and not can_old:
+                failed = True
                 break
-                
-            if draw_old:
-                chosen_word = np.random.choice(valid_repeats)
-                schedule.append((chosen_word, "Old"))
-                pending_repeats.remove(chosen_word)
+
+            # Probabilistic balance based on remaining load
+            if can_new and can_old:
+                rem_new = len(new_queue)
+                rem_old = len(active_repeats)
+                p_old = rem_old / (rem_new + rem_old)
+                draw_old = np.random.rand() < p_old
+            elif can_old:
+                draw_old = True
             else:
-                chosen_word = pool_new.pop()
-                schedule.append((chosen_word, "New"))
-                pending_repeats.append(chosen_word)
-                
-        if len(schedule) == len(words) * 2:
+                draw_old = False
+
+            if draw_old:
+                words_r, weights = zip(*ready)
+                weights = np.array(weights) / sum(weights)
+                chosen = np.random.choice(words_r, p=weights)
+                schedule.append((chosen, "Old"))
+                del active_repeats[chosen]
+            else:
+                chosen = new_queue.pop(0)
+                schedule.append((chosen, "New"))
+                active_repeats[chosen] = t
+
+        if not failed and len(schedule) == 150:
             return [{"word": w, "ground_truth": gt} for w, gt in schedule]
-            
-    # Deterministic fallback
+
+    # Robust fallback
     schedule = []
-    half_1 = words[:len(words)//2]
-    half_2 = words[len(words)//2:]
-    for w in half_1:
+    for w in words:
         schedule.append({"word": w, "ground_truth": "New"})
-    for w in half_1:
-        schedule.append({"word": w, "ground_truth": "Old"})
-    for w in half_2:
-        schedule.append({"word": w, "ground_truth": "New"})
-    for w in half_2:
+    for w in words:
         schedule.append({"word": w, "ground_truth": "Old"})
     return schedule
+
 
 # ==========================================
 # 3. SESSION STATE INITIALIZATION
