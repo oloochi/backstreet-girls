@@ -293,11 +293,11 @@ elif st.session_state.stage == "completed":
             st.markdown("### Signal Detection Matrix (2×2)")
             c_sd1, c_sd2 = st.columns(2)
             with c_sd1:
-                st.metric("Total Hits (Old marked Familiar)", total_hits)
-                st.metric("Total Misses (Old marked Unfamiliar)", total_misses)
+                st.metric("Total Hits (Old Marked Familiar)", total_hits)
+                st.metric("Total Misses (Old Marked Unfamiliar)", total_misses)
             with c_sd2:
-                st.metric("Total False Alarms (New marked Familiar)", total_fa)
-                st.metric("Total Correct Rejections (New marked Unfamiliar)", total_cr)
+                st.metric("Total False Alarms (New Marked Familiar)", total_fa)
+                st.metric("Total Correct Rejections (New Marked Unfamiliar)", total_cr)
             
             st.divider()
             st.markdown("### Response & Stimulus Diagnostics")
