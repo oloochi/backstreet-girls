@@ -290,7 +290,7 @@ elif st.session_state.stage == "completed":
             m_col2.metric("Avg Reaction Time", f"{avg_rt:.2f} s")
             m_col3.metric("Total Trials", total_trials)
             
-            st.markdown("### Signal Detection Matrix (2×2)")
+            st.markdown("### Signal Detection")
             c_sd1, c_sd2 = st.columns(2)
             with c_sd1:
                 st.metric("Total Hits (Old Marked Familiar)", total_hits)
