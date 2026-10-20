@@ -260,41 +260,54 @@ elif st.session_state.stage == "completed":
         password_input = st.text_input("Enter Administrator Password:", type="password")
 
         if password_input == "backstreet":
-            st.success("Authorized Access")
 
+            st.success("Authorized Access")
+            
             records = st.session_state.results
             total_trials = len(records)
             total_time = st.session_state.total_session_time
             
-            # Metrics derivations
+            # Latency derivations
             rts = [r["reaction_time_sec"] for r in records]
             avg_rt = np.mean(rts) if rts else 0.0
             
+            # 2x2 Signal Detection matrix tallies
             total_hits = sum(1 for r in records if r["signal_type"] == "Hit")
             total_misses = sum(1 for r in records if r["signal_type"] == "Miss")
-            total_familiar_clicks = sum(1 for r in records if r["user_response"] == "Familiar")
+            total_fa = sum(1 for r in records if r["signal_type"] == "False Alarm")
+            total_cr = sum(1 for r in records if r["signal_type"] == "Correct Rejection")
             
+            total_familiar_clicks = sum(1 for r in records if r["user_response"] == "Familiar")
+            total_unfamiliar_clicks = sum(1 for r in records if r["user_response"] == "Unfamiliar")
+            
+            # Average length of all correctly classified words (Hits + Correct Rejections)
             correct_lengths = [r["word_length"] for r in records if r["is_correct"] == 1]
             avg_correct_length = np.mean(correct_lengths) if correct_lengths else 0.0
-
+            
             st.markdown("### Participant Summary Metrics")
             m_col1, m_col2, m_col3 = st.columns(3)
             m_col1.metric("Total Time", f"{total_time:.2f} s")
             m_col2.metric("Avg Reaction Time", f"{avg_rt:.2f} s")
             m_col3.metric("Total Trials", total_trials)
-
-            m_col4, m_col5, m_col6 = st.columns(3)
-            m_col4.metric("Total Hits", total_hits)
-            m_col5.metric("Total Misses", total_misses)
-            m_col6.metric("Times 'Familiar' Pressed", total_familiar_clicks)
-
-            st.metric("Avg Length of Correct Words", f"{avg_correct_length:.2f} letters")
-
+            
+            st.markdown("### Signal Detection Matrix (2×2)")
+            c_sd1, c_sd2 = st.columns(2)
+            with c_sd1:
+                st.metric("Total Hits (Old marked Familiar)", total_hits)
+                st.metric("Total Misses (Old marked Unfamiliar)", total_misses)
+            with c_sd2:
+                st.metric("Total False Alarms (New marked Familiar)", total_fa)
+                st.metric("Total Correct Rejections (New marked Unfamiliar)", total_cr)
+            
+            st.divider()
+            st.markdown("### Response & Stimulus Diagnostics")
+            d_col1, d_col2, d_col3 = st.columns(3)
+            d_col1.metric("Times 'Familiar' Pressed", total_familiar_clicks)
+            d_col2.metric("Times 'Unfamiliar' Pressed", total_unfamiliar_clicks)
+            d_col3.metric("Avg Length of Correct Words", f"{avg_correct_length:.2f} letters")
+            
             st.divider()
             if st.button("Reset Session for Next Participant"):
                 for key in list(st.session_state.keys()):
                     del st.session_state[key]
                 st.rerun()
-
-        elif password_input != "":
-            st.error("Incorrect password. Please try again.")
