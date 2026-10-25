@@ -45,7 +45,7 @@ TASK_HTML = """
     .screen {
         display: none;
         width: 100%;
-        max-width: 500px;
+        max-width: 520px;
         text-align: center;
     }
     .screen.active {
@@ -61,7 +61,7 @@ TASK_HTML = """
         margin-bottom: 1.2rem;
     }
     h2 {
-        font-size: 1.4rem;
+        font-size: 1.35rem;
         font-weight: 600;
         margin-bottom: 0.8rem;
     }
@@ -79,7 +79,7 @@ TASK_HTML = """
         height: 1.4rem;
     }
 
-    /* Buttons */
+    /* Primary Action Buttons */
     .btn-primary {
         background-color: #FF4B4B;
         color: #FFFFFF;
@@ -129,7 +129,7 @@ TASK_HTML = """
         background-color: #4B5563 !important;
     }
 
-    /* Admin Password & Results */
+    /* Admin Password & Unlock Section */
     .admin-input-group {
         display: flex;
         gap: 10px;
@@ -156,10 +156,12 @@ TASK_HTML = """
         margin-bottom: 1rem;
         display: none;
     }
+
+    /* Metrics Grid */
     .metric-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 14px;
+        gap: 12px;
         width: 100%;
         margin-bottom: 1.5rem;
     }
@@ -167,23 +169,23 @@ TASK_HTML = """
         background-color: #1F2937;
         border: 1px solid #374151;
         border-radius: 8px;
-        padding: 16px;
+        padding: 14px;
         text-align: left;
     }
     .metric-label {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         color: #9CA3AF;
         margin-bottom: 4px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
     .metric-val {
-        font-size: 1.4rem;
+        font-size: 1.35rem;
         font-weight: 700;
         color: #F9FAFB;
     }
 
-    /* Collapsible Breakdown Section */
+    /* Breakdown Table Details */
     details {
         width: 100%;
         background-color: #1F2937;
@@ -195,7 +197,7 @@ TASK_HTML = """
     }
     summary {
         padding: 14px 18px;
-        font-size: 1rem;
+        font-size: 0.95rem;
         font-weight: 600;
         cursor: pointer;
         color: #E5E7EB;
@@ -209,7 +211,7 @@ TASK_HTML = """
     }
     summary::after {
         content: "▼";
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         color: #9CA3AF;
         transition: transform 0.2s ease;
     }
@@ -217,23 +219,23 @@ TASK_HTML = """
         transform: rotate(180deg);
     }
     .table-wrapper {
-        padding: 0 16px 16px 16px;
+        padding: 0 14px 14px 14px;
         overflow-x: auto;
     }
     table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 0.95rem;
+        font-size: 0.88rem;
         text-align: left;
     }
     th, td {
-        padding: 10px 12px;
+        padding: 8px 10px;
         border-bottom: 1px solid #374151;
     }
     th {
         color: #9CA3AF;
         font-weight: 600;
-        font-size: 0.85rem;
+        font-size: 0.78rem;
         text-transform: uppercase;
     }
     tr:last-child td {
@@ -257,14 +259,14 @@ TASK_HTML = """
     <p>
         A sequence of tiles will illuminate in white across the 3x3 grid one by one.<br>
         Watch closely, then reproduce the exact sequence in order by clicking the tiles.<br><br>
-        Each round displays the previous pattern plus one new addition.<br>
-        The test will continue until all sequences are complete.
+        Each level will display the previous pattern plus one new addition.<br>
+        The test will continue until all sequences are finished.
     </p>
     <h2 style="margin-bottom: 1.5rem;">Are you ready?</h2>
     <button class="btn-primary" onclick="startTask()">Click Here to Begin</button>
 </div>
 
-<!-- 2. Interactive Testing Screen -->
+<!-- 2. Testing Screen -->
 <div id="screen-task" class="screen">
     <h2 id="seq-header">Sequence 1 of 10</h2>
     <div id="status-text" class="status-text">Watch the pattern carefully...</div>
@@ -281,7 +283,7 @@ TASK_HTML = """
     </div>
 </div>
 
-<!-- 3. Completion & Password-Protected Results Screen -->
+<!-- 3. Completion & Password Protected Results -->
 <div id="screen-complete" class="screen">
     <h1>Task Complete</h1>
     <p>Thank you! You have finished the pattern recognition evaluation.</p>
@@ -309,26 +311,38 @@ TASK_HTML = """
                 <div class="metric-val" id="metric-first-error">-</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">Avg Press Latency</div>
-                <div class="metric-val" id="metric-avg-latency">-</div>
+                <div class="metric-label">Max Completed Span</div>
+                <div class="metric-val" id="metric-max-span">-</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Units Recalled (Partial)</div>
+                <div class="metric-val" id="metric-total-units">-</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Avg Planning Latency (RT1)</div>
+                <div class="metric-val" id="metric-rt1">-</div>
+            </div>
+            <div class="metric-card" style="grid-column: span 2;">
+                <div class="metric-label">Avg Execution Interval (Subsequent ITI)</div>
+                <div class="metric-val" id="metric-subsequent-iti">-</div>
             </div>
         </div>
 
         <!-- Detailed Breakdown -->
         <details open>
-            <summary>Trial Breakdown</summary>
+            <summary>Trial-by-Trial Breakdown</summary>
             <div class="table-wrapper">
                 <table>
                     <thead>
                         <tr>
-                            <th>Sequence Length</th>
-                            <th>Result</th>
-                            <th>Avg Press Latency (s)</th>
+                            <th>Level</th>
+                            <th>Outcome</th>
+                            <th>Units Recalled</th>
+                            <th>Planning RT1 (s)</th>
+                            <th>Subsequent ITI (s)</th>
                         </tr>
                     </thead>
-                    <tbody id="trial-rows">
-                        <!-- Populated by JavaScript -->
-                    </tbody>
+                    <tbody id="trial-rows"></tbody>
                 </table>
             </div>
         </details>
@@ -339,7 +353,7 @@ TASK_HTML = """
 
 <script>
     const MAX_LEVEL = 10;
-    const FLASH_DURATION = 550; // ms
+    const FLASH_DURATION = 500; // ms
     const GAP_DURATION = 150;   // ms
 
     let masterPattern = [];
@@ -348,6 +362,7 @@ TASK_HTML = """
     let trialResults = [];
     let taskStartTime = 0;
     let taskEndTime = 0;
+    let inputStartTime = 0;
     let lastClickTime = 0;
     let currentTrialLatencies = [];
     let isAcceptingInput = false;
@@ -359,15 +374,14 @@ TASK_HTML = """
         document.getElementById(id).classList.add('active');
     }
 
+    // Prevents tile repeats > 2 times in a row
     function generateMasterPattern() {
         const pattern = [];
         for (let i = 0; i < MAX_LEVEL; i++) {
             let nextTile;
             do {
                 nextTile = Math.floor(Math.random() * 9);
-            // Re-roll if the candidate matches the preceding two selections
             } while (i >= 2 && nextTile === pattern[i - 1] && nextTile === pattern[i - 2]);
-            
             pattern.push(nextTile);
         }
         return pattern;
@@ -410,13 +424,14 @@ TASK_HTML = """
                 }
             }
             flashNext();
-        }, 400);
+        }, 500);
     }
 
     function enableInputPhase() {
         isAcceptingInput = true;
         tiles.forEach(t => t.classList.add('interactive'));
-        lastClickTime = performance.now();
+        inputStartTime = performance.now();
+        lastClickTime = inputStartTime;
         updateInputStatus();
     }
 
@@ -430,7 +445,8 @@ TASK_HTML = """
             if (!isAcceptingInput) return;
 
             const now = performance.now();
-            currentTrialLatencies.push((now - lastClickTime) / 1000);
+            const latency = (now - lastClickTime) / 1000;
+            currentTrialLatencies.push(latency);
             lastClickTime = now;
 
             const idx = parseInt(tile.dataset.idx);
@@ -452,10 +468,26 @@ TASK_HTML = """
         const targetSeq = masterPattern.slice(0, currentLevel);
         const isCorrect = JSON.stringify(userInput) === JSON.stringify(targetSeq);
 
+        // Continuous units recalled before the first misfire in this sequence
+        let unitsRecalled = 0;
+        for (let i = 0; i < currentLevel; i++) {
+            if (userInput[i] === targetSeq[i]) {
+                unitsRecalled++;
+            } else {
+                break;
+            }
+        }
+
+        // Planning latency (RT1) vs. Subsequent tapping latencies (ITI)
+        const planningRT = currentTrialLatencies.length > 0 ? currentTrialLatencies[0] : 0.0;
+        const subsequentLatencies = currentTrialLatencies.slice(1);
+
         trialResults.push({
             level: currentLevel,
             correct: isCorrect,
-            latencies: [...currentTrialLatencies]
+            unitsRecalled: unitsRecalled,
+            planningRT: planningRT,
+            subsequentLatencies: subsequentLatencies
         });
 
         if (currentLevel < MAX_LEVEL) {
@@ -479,40 +511,65 @@ TASK_HTML = """
             document.getElementById('pw-group').style.display = 'none';
             document.getElementById('stats-container').style.display = 'block';
 
-            // 1. Total Time
+            // 1. Completion time
             const totalSecs = (taskEndTime - taskStartTime) / 1000;
             const m = Math.floor(totalSecs / 60);
             const s = (totalSecs % 60).toFixed(1);
             document.getElementById('metric-total-time').innerText = `${m}m ${s}s`;
 
-            // 2. Correct Trials
+            // 2. Correct trials
             const correctCount = trialResults.filter(r => r.correct).length;
             document.getElementById('metric-correct').innerText = `${correctCount} / ${MAX_LEVEL}`;
 
-            // 3. First Error Sequence Length
+            // 3. First error sequence length
             const firstFail = trialResults.find(r => !r.correct);
             document.getElementById('metric-first-error').innerText = firstFail ? `${firstFail.level} squares` : 'None (100%)';
 
-            // 4. Avg Time per Tile
-            const allLatencies = trialResults.flatMap(r => r.latencies);
-            const avgLatency = allLatencies.reduce((a, b) => a + b, 0) / (allLatencies.length || 1);
-            document.getElementById('metric-avg-latency').innerText = `${avgLatency.toFixed(2)} s`;
+            // 4. Maximum span achieved prior to first error
+            let maxSpan = 0;
+            for (let r of trialResults) {
+                if (r.correct) {
+                    maxSpan = r.level;
+                } else {
+                    break;
+                }
+            }
+            document.getElementById('metric-max-span').innerText = `${maxSpan} squares`;
 
-            // 5. Populate Detailed Table Rows
+            // 5. Total continuous units recalled across all trials
+            const totalUnits = trialResults.reduce((acc, r) => acc + r.unitsRecalled, 0);
+            const maxPossibleUnits = (MAX_LEVEL * (MAX_LEVEL + 1)) / 2; // 55 for level 10
+            document.getElementById('metric-total-units').innerText = `${totalUnits} / ${maxPossibleUnits}`;
+
+            // 6. Avg Planning Latency (RT1)
+            const allRT1 = trialResults.map(r => r.planningRT);
+            const avgRT1 = allRT1.reduce((a, b) => a + b, 0) / (allRT1.length || 1);
+            document.getElementById('metric-rt1').innerText = `${avgRT1.toFixed(2)} s`;
+
+            // 7. Avg Execution Latency (Subsequent ITI)
+            const allSubsequent = trialResults.flatMap(r => r.subsequentLatencies);
+            const avgSubsequent = allSubsequent.length > 0 
+                ? (allSubsequent.reduce((a, b) => a + b, 0) / allSubsequent.length) 
+                : 0.0;
+            document.getElementById('metric-subsequent-iti').innerText = `${avgSubsequent.toFixed(2)} s`;
+
+            // 8. Detailed Breakdown Table
             const tbody = document.getElementById('trial-rows');
             tbody.innerHTML = '';
             trialResults.forEach(res => {
                 const tr = document.createElement('tr');
-                const avgTrialLat = res.latencies.length > 0
-                    ? (res.latencies.reduce((a, b) => a + b, 0) / res.latencies.length).toFixed(3)
-                    : '0.000';
+                const avgSubLat = res.subsequentLatencies.length > 0
+                    ? (res.subsequentLatencies.reduce((a, b) => a + b, 0) / res.subsequentLatencies.length).toFixed(3)
+                    : '-';
                 const tagClass = res.correct ? 'tag-correct' : 'tag-incorrect';
                 const tagText = res.correct ? 'Correct' : 'Incorrect';
 
                 tr.innerHTML = `
                     <td>${res.level}</td>
                     <td><span class="${tagClass}">${tagText}</span></td>
-                    <td>${avgTrialLat}</td>
+                    <td>${res.unitsRecalled} / ${res.level}</td>
+                    <td>${res.planningRT.toFixed(3)}</td>
+                    <td>${avgSubLat}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -534,4 +591,4 @@ TASK_HTML = """
 </html>
 """
 
-components.html(TASK_HTML, height=750, scrolling=True)
+components.html(TASK_HTML, height=780, scrolling=True)
