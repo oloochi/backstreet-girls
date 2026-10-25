@@ -1,286 +1,428 @@
 import streamlit as st
-import time
-import random
+import streamlit.components.v1 as components
 
-# --- Page Configuration & Global Styling ---
 st.set_page_config(page_title="Pattern Recognition Task", layout="centered")
 
+# Hide default Streamlit padding & header elements
 st.markdown("""
     <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
     .block-container {
-        max-width: 650px;
-        padding-top: 2.5rem;
-        padding-bottom: 3rem;
-    }
-    .start-title {
-        text-align: center;
-        font-size: 2.3rem;
-        font-weight: 700;
-        margin-bottom: 1.2rem;
-    }
-    .start-instructions {
-        text-align: center;
-        font-size: 1.15rem;
-        line-height: 1.6;
-        color: #D1D5DB;
-        margin-bottom: 2rem;
-    }
-    .ready-prompt {
-        text-align: center;
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-bottom: 1.2rem;
-    }
-    
-    /* Playback HTML Grid */
-    .grid-container {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-        width: 100%;
-        max-width: 480px;
-        margin: 1.5rem auto;
-    }
-    .pb-tile {
-        height: 110px;
-        border-radius: 8px;
-        border: 2px solid #333333;
-        background-color: #262730;
-        box-sizing: border-box;
-    }
-    .pb-tile-active {
-        height: 110px;
-        border-radius: 8px;
-        border: 2px solid #FFFFFF;
-        background-color: #FFFFFF;
-        box-shadow: 0 0 18px rgba(255, 255, 255, 0.95);
-        box-sizing: border-box;
-    }
-
-    /* Input Grid Native Buttons */
-    div[data-testid="stColumn"] > div > div.stButton > button {
-        width: 100% !important;
-        height: 110px !important;
-        border-radius: 8px !important;
-        border: 2px solid #333333 !important;
-        background-color: #262730 !important;
-        color: transparent !important;
-        transition: none !important;
-    }
-    div[data-testid="stColumn"] > div > div.stButton > button:hover {
-        border-color: #555555 !important;
-        background-color: #262730 !important;
-    }
-
-    /* Primary Action Buttons (Start & Reset) */
-    div.stButton > button[kind="primary"] {
-        height: 52px !important;
-        color: #FFFFFF !important;
-        font-size: 1.1rem !important;
-        font-weight: 600 !important;
-        background-color: #FF4B4B !important;
-        border: none !important;
+        padding-top: 1.5rem !important;
+        padding-bottom: 0rem !important;
+        max-width: 650px !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-MAX_LEVEL = 10
-DISPLAY_FLASH_TIME = 0.65  # Seconds tile illuminates white
-DISPLAY_GAP_TIME = 0.20    # Seconds between flashes
+TASK_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: transparent;
+        color: #FFFFFF;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 100vh;
+        padding-top: 20px;
+    }
 
-# --- State Management ---
-def initialize_state(force_reset=False):
-    if force_reset or "stage" not in st.session_state:
-        st.session_state.stage = "intro"
-        st.session_state.master_pattern = [random.randint(0, 8) for _ in range(MAX_LEVEL)]
-        st.session_state.current_level = 1
-        st.session_state.user_input = []
-        st.session_state.trial_results = []
-        st.session_state.task_start_time = None
-        st.session_state.task_end_time = None
-        st.session_state.last_click_time = None
-        st.session_state.current_level_click_times = []
+    .screen {
+        display: none;
+        width: 100%;
+        max-width: 500px;
+        text-align: center;
+    }
+    .screen.active {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
 
-initialize_state()
+    /* Typography */
+    h1 {
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin-bottom: 1.2rem;
+    }
+    h2 {
+        font-size: 1.4rem;
+        font-weight: 600;
+        margin-bottom: 0.8rem;
+    }
+    p {
+        font-size: 1.1rem;
+        line-height: 1.6;
+        color: #D1D5DB;
+        margin-bottom: 1.8rem;
+    }
+    .status-text {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #9CA3AF;
+        margin-bottom: 1.2rem;
+        height: 1.4rem;
+    }
 
-def record_level_submission():
-    target_seq = st.session_state.master_pattern[:st.session_state.current_level]
-    is_correct = (st.session_state.user_input == target_seq)
-    
-    st.session_state.trial_results.append({
-        "level": st.session_state.current_level,
-        "correct": is_correct,
-        "click_times": list(st.session_state.current_level_click_times)
-    })
-    
-    st.session_state.user_input = []
-    st.session_state.current_level_click_times = []
-    
-    if st.session_state.current_level < MAX_LEVEL:
-        st.session_state.current_level += 1
-        st.session_state.stage = "showing"
-    else:
-        st.session_state.task_end_time = time.time()
-        st.session_state.stage = "completed"
-    st.rerun()
+    /* Buttons */
+    .btn-primary {
+        background-color: #FF4B4B;
+        color: #FFFFFF;
+        border: none;
+        border-radius: 8px;
+        padding: 14px 28px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+        width: 100%;
+        max-width: 300px;
+    }
+    .btn-primary:hover {
+        background-color: #E03E3E;
+    }
 
+    /* 3x3 Tile Grid */
+    .grid-board {
+        display: grid;
+        grid-template-columns: repeat(3, 110px);
+        grid-template-rows: repeat(3, 110px);
+        gap: 12px;
+        margin: 0 auto;
+    }
+    .tile {
+        width: 110px;
+        height: 110px;
+        border-radius: 8px;
+        border: 2px solid #333333;
+        background-color: #262730;
+        cursor: default;
+        transition: background-color 0.05s ease, box-shadow 0.05s ease;
+    }
+    .tile.interactive {
+        cursor: pointer;
+    }
+    .tile.interactive:hover {
+        border-color: #555555;
+    }
+    .tile.active-flash {
+        background-color: #FFFFFF !important;
+        border-color: #FFFFFF !important;
+        box-shadow: 0 0 18px rgba(255, 255, 255, 0.95) !important;
+    }
+    .tile.user-press {
+        background-color: #4B5563 !important;
+    }
 
-# ==========================================
-# 1. INTRO / START SCREEN
-# ==========================================
-if st.session_state.stage == "intro":
-    st.markdown('<div class="start-title">Pattern Recognition Task</div>', unsafe_allow_html=True)
-    st.markdown(
-        """
-        <div class="start-instructions">
-            A sequence of tiles will illuminate in white across the 3x3 grid one by one.<br>
-            Watch closely, then reproduce the exact sequence in order by clicking the tiles.<br><br>
-            Each round will display the previous pattern plus one new addition.<br>
-            The test will continue until all sequences are finished.
+    /* Admin Password & Results */
+    .admin-input-group {
+        display: flex;
+        gap: 10px;
+        width: 100%;
+        max-width: 360px;
+        margin: 1.5rem 0;
+    }
+    .password-input {
+        flex: 1;
+        padding: 10px 14px;
+        border-radius: 6px;
+        border: 1px solid #4B5563;
+        background-color: #1F2937;
+        color: #FFFFFF;
+        font-size: 1rem;
+        outline: none;
+    }
+    .password-input:focus {
+        border-color: #FF4B4B;
+    }
+    .error-msg {
+        color: #EF4444;
+        font-size: 0.95rem;
+        margin-bottom: 1rem;
+        display: none;
+    }
+    .metric-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        width: 100%;
+        margin-bottom: 2rem;
+    }
+    .metric-card {
+        background-color: #1F2937;
+        border: 1px solid #374151;
+        border-radius: 8px;
+        padding: 16px;
+        text-align: left;
+    }
+    .metric-label {
+        font-size: 0.85rem;
+        color: #9CA3AF;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .metric-val {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #F9FAFB;
+    }
+</style>
+</head>
+<body>
+
+<!-- 1. Start Screen -->
+<div id="screen-intro" class="screen active">
+    <h1>Pattern Recognition Task</h1>
+    <p>
+        A sequence of tiles will illuminate in white across the 3x3 grid one by one.<br>
+        Watch closely, then reproduce the exact sequence in order by clicking the tiles.<br><br>
+        Each round displays the previous pattern plus one new addition.<br>
+        The test will continue until all sequences are complete.
+    </p>
+    <h2 style="margin-bottom: 1.5rem;">Are you ready?</h2>
+    <button class="btn-primary" onclick="startTask()">Click Here to Begin</button>
+</div>
+
+<!-- 2. Interactive Testing Screen -->
+<div id="screen-task" class="screen">
+    <h2 id="seq-header">Sequence 1 of 10</h2>
+    <div id="status-text" class="status-text">Watch the pattern carefully...</div>
+    <div class="grid-board" id="grid">
+        <div class="tile" data-idx="0"></div>
+        <div class="tile" data-idx="1"></div>
+        <div class="tile" data-idx="2"></div>
+        <div class="tile" data-idx="3"></div>
+        <div class="tile" data-idx="4"></div>
+        <div class="tile" data-idx="5"></div>
+        <div class="tile" data-idx="6"></div>
+        <div class="tile" data-idx="7"></div>
+        <div class="tile" data-idx="8"></div>
+    </div>
+</div>
+
+<!-- 3. Completion & Password-Protected Results Screen -->
+<div id="screen-complete" class="screen">
+    <h1>Task Complete</h1>
+    <p>Thank you! You have finished the pattern recognition evaluation.</p>
+    <hr style="border: 0; border-top: 1px solid #374151; width: 100%; margin-bottom: 1.5rem;">
+
+    <h2 style="font-size: 1.2rem;">Administrative Results</h2>
+    <div class="admin-input-group" id="pw-group">
+        <input type="password" id="admin-pw" class="password-input" placeholder="Enter password">
+        <button class="btn-primary" style="max-width: 100px; padding: 10px;" onclick="unlockStats()">Unlock</button>
+    </div>
+    <div id="pw-error" class="error-msg">Incorrect password.</div>
+
+    <div id="stats-container" style="display: none; width: 100%;">
+        <div class="metric-grid">
+            <div class="metric-card">
+                <div class="metric-label">Total Completion Time</div>
+                <div class="metric-val" id="metric-total-time">-</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Trials Correct</div>
+                <div class="metric-val" id="metric-correct">-</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">First Error Length</div>
+                <div class="metric-val" id="metric-first-error">-</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Avg Press Latency</div>
+                <div class="metric-val" id="metric-avg-latency">-</div>
+            </div>
         </div>
-        """,
-        unsafe_allow_html=True
-    )
-    st.markdown('<div class="ready-prompt">Are you ready?</div>', unsafe_allow_html=True)
-    
-    col_l, col_btn, col_r = st.columns([1, 2, 1])
-    with col_btn:
-        if st.button("Click Here to Begin", type="primary", use_container_width=True):
-            st.session_state.stage = "showing"
-            st.session_state.task_start_time = time.time()
-            st.session_state.current_level = 1
-            st.session_state.user_input = []
-            st.session_state.trial_results = []
-            st.rerun()
+        <button class="btn-primary" onclick="resetTask()">Reset for Next Participant</button>
+    </div>
+</div>
 
-# ==========================================
-# 2. PATTERN DEMONSTRATION PHASE
-# ==========================================
-elif st.session_state.stage == "showing":
-    st.subheader(f"Sequence {st.session_state.current_level} of {MAX_LEVEL}")
-    st.info("Watch the pattern carefully...")
+<script>
+    const MAX_LEVEL = 10;
+    const FLASH_DURATION = 650; // ms
+    const GAP_DURATION = 200;   // ms
 
-    active_sequence = st.session_state.master_pattern[:st.session_state.current_level]
-    grid_slot = st.empty()
+    let masterPattern = [];
+    let currentLevel = 1;
+    let userInput = [];
+    let trialResults = [];
+    let taskStartTime = 0;
+    let taskEndTime = 0;
+    let lastClickTime = 0;
+    let currentTrialLatencies = [];
+    let isAcceptingInput = false;
 
-    def generate_grid_html(active_idx=-1):
-        tiles_html = ""
-        for i in range(9):
-            cls = "pb-tile-active" if i == active_idx else "pb-tile"
-            tiles_html += f'<div class="{cls}"></div>'
-        return f'<div class="grid-container">{tiles_html}</div>'
+    const tiles = document.querySelectorAll('.tile');
 
-    # Clear and render initial baseline state
-    grid_slot.markdown(generate_grid_html(-1), unsafe_allow_html=True)
-    time.sleep(0.4)
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
 
-    # Flash each tile in the sequence cleanly
-    for tile in active_sequence:
-        grid_slot.markdown(generate_grid_html(tile), unsafe_allow_html=True)
-        time.sleep(DISPLAY_FLASH_TIME)
-        grid_slot.markdown(generate_grid_html(-1), unsafe_allow_html=True)
-        time.sleep(DISPLAY_GAP_TIME)
+    function generateMasterPattern() {
+        const pattern = [];
+        for (let i = 0; i < MAX_LEVEL; i++) {
+            pattern.push(Math.floor(Math.random() * 9));
+        }
+        return pattern;
+    }
 
-    # Clear before moving to input stage
-    grid_slot.empty()
-    st.session_state.stage = "input"
-    st.session_state.last_click_time = time.time()
-    st.rerun()
+    function startTask() {
+        masterPattern = generateMasterPattern();
+        currentLevel = 1;
+        trialResults = [];
+        taskStartTime = performance.now();
+        showScreen('screen-task');
+        runPlayback();
+    }
 
-# ==========================================
-# 3. PARTICIPANT INPUT PHASE
-# ==========================================
-elif st.session_state.stage == "input":
-    target_len = st.session_state.current_level
-    current_clicks = len(st.session_state.user_input)
+    function runPlayback() {
+        isAcceptingInput = false;
+        userInput = [];
+        currentTrialLatencies = [];
+        tiles.forEach(t => t.classList.remove('interactive'));
 
-    st.subheader(f"Sequence {st.session_state.current_level} of {MAX_LEVEL}")
-    st.caption(f"Reproduce the pattern: {current_clicks} / {target_len} tiles selected")
+        document.getElementById('seq-header').innerText = `Sequence ${currentLevel} of ${MAX_LEVEL}`;
+        document.getElementById('status-text').innerText = "Watch the pattern carefully...";
 
-    for r in range(3):
-        cols = st.columns(3)
-        for c in range(3):
-            idx = r * 3 + c
-            with cols[c]:
-                if st.button(" ", key=f"input_tile_{idx}", use_container_width=True):
-                    now = time.time()
-                    interval = now - st.session_state.last_click_time
-                    st.session_state.current_level_click_times.append(interval)
-                    st.session_state.last_click_time = now
+        const seq = masterPattern.slice(0, currentLevel);
+        let step = 0;
 
-                    st.session_state.user_input.append(idx)
+        setTimeout(() => {
+            function flashNext() {
+                if (step < seq.length) {
+                    const tileIdx = seq[step];
+                    tiles[tileIdx].classList.add('active-flash');
 
-                    if len(st.session_state.user_input) == target_len:
-                        record_level_submission()
-                    else:
-                        st.rerun()
+                    setTimeout(() => {
+                        tiles[tileIdx].classList.remove('active-flash');
+                        step++;
+                        setTimeout(flashNext, GAP_DURATION);
+                    }, FLASH_DURATION);
+                } else {
+                    enableInputPhase();
+                }
+            }
+            flashNext();
+        }, 400);
+    }
 
-# ==========================================
-# 4. TASK COMPLETION & ADMIN RESULTS
-# ==========================================
-elif st.session_state.stage == "completed":
-    st.title("Task Complete")
-    st.success("Thank you! You have finished the pattern recognition evaluation.")
-    st.markdown("---")
+    function enableInputPhase() {
+        isAcceptingInput = true;
+        tiles.forEach(t => t.classList.add('interactive'));
+        lastClickTime = performance.now();
+        updateInputStatus();
+    }
 
-    st.subheader("Administrative Results")
-    admin_pw = st.text_input("Enter password to unlock participant performance metrics:", type="password")
+    function updateInputStatus() {
+        document.getElementById('status-text').innerText = 
+            `Reproduce the pattern: ${userInput.length} / ${currentLevel} tiles selected`;
+    }
 
-    if admin_pw == "backstreet":
-        st.markdown("### Performance Summary")
+    tiles.forEach(tile => {
+        tile.addEventListener('click', () => {
+            if (!isAcceptingInput) return;
 
-        total_time = st.session_state.task_end_time - st.session_state.task_start_time
-        mins = int(total_time // 60)
-        secs = total_time % 60
+            const now = performance.now();
+            currentTrialLatencies.push((now - lastClickTime) / 1000);
+            lastClickTime = now;
 
-        total_trials = len(st.session_state.trial_results)
-        correct_trials = sum(1 for res in st.session_state.trial_results if res["correct"])
+            const idx = parseInt(tile.dataset.idx);
+            userInput.push(idx);
 
-        first_error_length = None
-        for res in st.session_state.trial_results:
-            if not res["correct"]:
-                first_error_length = res["level"]
-                break
+            // Brief click feedback
+            tile.classList.add('user-press');
+            setTimeout(() => tile.classList.remove('user-press'), 120);
 
-        all_click_intervals = [
-            interval
-            for res in st.session_state.trial_results
-            for interval in res["click_times"]
-        ]
-        avg_click_latency = (
-            sum(all_click_intervals) / len(all_click_intervals)
-            if all_click_intervals else 0.0
-        )
+            updateInputStatus();
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Total Completion Time", f"{mins}m {secs:.2f}s")
-            st.metric("Trials Correct", f"{correct_trials} / {total_trials}")
-        with col2:
-            st.metric(
-                "First Error Sequence Length",
-                f"{first_error_length} squares" if first_error_length is not None else "None (100% Correct)"
-            )
-            st.metric("Avg Time Per Square Selection", f"{avg_click_latency:.2f} s")
+            if (userInput.length === currentLevel) {
+                isAcceptingInput = false;
+                evaluateLevel();
+            }
+        });
+    });
 
-        st.markdown("---")
-        with st.expander("Trial Breakdown"):
-            st.dataframe(
-                [
-                    {
-                        "Sequence Length": res["level"],
-                        "Result": "Correct" if res["correct"] else "Incorrect",
-                        "Avg Press Latency (s)": round(sum(res["click_times"]) / len(res["click_times"]), 3) if res["click_times"] else 0.0
-                    }
-                    for res in st.session_state.trial_results
-                ],
-                use_container_width=True
-            )
+    function evaluateLevel() {
+        const targetSeq = masterPattern.slice(0, currentLevel);
+        const isCorrect = JSON.stringify(userInput) === JSON.stringify(targetSeq);
 
-        st.markdown("---")
-        if st.button("Reset for Next Participant", type="primary", use_container_width=True):
-            initialize_state(force_reset=True)
-            st.rerun()
+        trialResults.push({
+            level: currentLevel,
+            correct: isCorrect,
+            latencies: [...currentTrialLatencies]
+        });
 
-    elif admin_pw:
-        st.error("Incorrect password.")
+        if (currentLevel < MAX_LEVEL) {
+            currentLevel++;
+            setTimeout(runPlayback, 600);
+        } else {
+            taskEndTime = performance.now();
+            setTimeout(showCompletionScreen, 500);
+        }
+    }
+
+    function showCompletionScreen() {
+        showScreen('screen-complete');
+    }
+
+    function unlockStats() {
+        const pw = document.getElementById('admin-pw').value;
+        const err = document.getElementById('pw-error');
+        if (pw === "backstreet") {
+            err.style.display = 'none';
+            document.getElementById('pw-group').style.display = 'none';
+            document.getElementById('stats-container').style.display = 'block';
+
+            // 1. Total Time
+            const totalSecs = (taskEndTime - taskStartTime) / 1000;
+            const m = Math.floor(totalSecs / 60);
+            const s = (totalSecs % 60).toFixed(1);
+            document.getElementById('metric-total-time').innerText = `${m}m ${s}s`;
+
+            // 2. Correct Trials
+            const correctCount = trialResults.filter(r => r.correct).length;
+            document.getElementById('metric-correct').innerText = `${correctCount} / ${MAX_LEVEL}`;
+
+            // 3. First Error Sequence Length
+            const firstFail = trialResults.find(r => !r.correct);
+            document.getElementById('metric-first-error').innerText = firstFail ? `${firstFail.level} squares` : 'None (100%)';
+
+            // 4. Avg Time per Tile
+            const allLatencies = trialResults.flatMap(r => r.latencies);
+            const avgLatency = allLatencies.reduce((a, b) => a + b, 0) / (allLatencies.length || 1);
+            document.getElementById('metric-avg-latency').innerText = `${avgLatency.toFixed(2)} s`;
+        } else {
+            err.style.display = 'block';
+        }
+    }
+
+    function resetTask() {
+        document.getElementById('admin-pw').value = '';
+        document.getElementById('pw-group').style.display = 'flex';
+        document.getElementById('stats-container').style.display = 'none';
+        document.getElementById('pw-error').style.display = 'none';
+        showScreen('screen-intro');
+    }
+</script>
+</body>
+</html>
+"""
+
+# Render the application within Streamlit's iframe container
+components.html(TASK_HTML, height=620)
