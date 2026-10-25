@@ -3,7 +3,6 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Pattern Recognition Task", layout="centered")
 
-# Hide default Streamlit padding & header elements
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -40,6 +39,7 @@ TASK_HTML = """
         justify-content: flex-start;
         min-height: 100vh;
         padding-top: 20px;
+        padding-bottom: 30px;
     }
 
     .screen {
@@ -161,7 +161,7 @@ TASK_HTML = """
         grid-template-columns: 1fr 1fr;
         gap: 14px;
         width: 100%;
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
     }
     .metric-card {
         background-color: #1F2937;
@@ -181,6 +181,71 @@ TASK_HTML = """
         font-size: 1.4rem;
         font-weight: 700;
         color: #F9FAFB;
+    }
+
+    /* Collapsible Breakdown Section */
+    details {
+        width: 100%;
+        background-color: #1F2937;
+        border: 1px solid #374151;
+        border-radius: 8px;
+        margin-bottom: 1.8rem;
+        text-align: left;
+        overflow: hidden;
+    }
+    summary {
+        padding: 14px 18px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        color: #E5E7EB;
+        list-style: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    summary::-webkit-details-marker {
+        display: none;
+    }
+    summary::after {
+        content: "▼";
+        font-size: 0.8rem;
+        color: #9CA3AF;
+        transition: transform 0.2s ease;
+    }
+    details[open] summary::after {
+        transform: rotate(180deg);
+    }
+    .table-wrapper {
+        padding: 0 16px 16px 16px;
+        overflow-x: auto;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+        text-align: left;
+    }
+    th, td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #374151;
+    }
+    th {
+        color: #9CA3AF;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+    }
+    tr:last-child td {
+        border-bottom: none;
+    }
+    .tag-correct {
+        color: #34D399;
+        font-weight: 600;
+    }
+    .tag-incorrect {
+        color: #F87171;
+        font-weight: 600;
     }
 </style>
 </head>
@@ -248,6 +313,26 @@ TASK_HTML = """
                 <div class="metric-val" id="metric-avg-latency">-</div>
             </div>
         </div>
+
+        <!-- Detailed Breakdown -->
+        <details open>
+            <summary>Trial Breakdown</summary>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sequence Length</th>
+                            <th>Result</th>
+                            <th>Avg Press Latency (s)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trial-rows">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </details>
+
         <button class="btn-primary" onclick="resetTask()">Reset for Next Participant</button>
     </div>
 </div>
@@ -345,7 +430,6 @@ TASK_HTML = """
             const idx = parseInt(tile.dataset.idx);
             userInput.push(idx);
 
-            // Brief click feedback
             tile.classList.add('user-press');
             setTimeout(() => tile.classList.remove('user-press'), 120);
 
@@ -407,6 +491,26 @@ TASK_HTML = """
             const allLatencies = trialResults.flatMap(r => r.latencies);
             const avgLatency = allLatencies.reduce((a, b) => a + b, 0) / (allLatencies.length || 1);
             document.getElementById('metric-avg-latency').innerText = `${avgLatency.toFixed(2)} s`;
+
+            // 5. Populate Detailed Table Rows
+            const tbody = document.getElementById('trial-rows');
+            tbody.innerHTML = '';
+            trialResults.forEach(res => {
+                const tr = document.createElement('tr');
+                const avgTrialLat = res.latencies.length > 0
+                    ? (res.latencies.reduce((a, b) => a + b, 0) / res.latencies.length).toFixed(3)
+                    : '0.000';
+                const tagClass = res.correct ? 'tag-correct' : 'tag-incorrect';
+                const tagText = res.correct ? 'Correct' : 'Incorrect';
+
+                tr.innerHTML = `
+                    <td>${res.level}</td>
+                    <td><span class="${tagClass}">${tagText}</span></td>
+                    <td>${avgTrialLat}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
         } else {
             err.style.display = 'block';
         }
@@ -424,5 +528,4 @@ TASK_HTML = """
 </html>
 """
 
-# Render the application within Streamlit's iframe container
-components.html(TASK_HTML, height=620)
+components.html(TASK_HTML, height=750, scrolling=True)
