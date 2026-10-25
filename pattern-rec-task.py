@@ -362,7 +362,13 @@ TASK_HTML = """
     function generateMasterPattern() {
         const pattern = [];
         for (let i = 0; i < MAX_LEVEL; i++) {
-            pattern.push(Math.floor(Math.random() * 9));
+            let nextTile;
+            do {
+                nextTile = Math.floor(Math.random() * 9);
+            // Re-roll if the candidate matches the preceding two selections
+            } while (i >= 2 && nextTile === pattern[i - 1] && nextTile === pattern[i - 2]);
+            
+            pattern.push(nextTile);
         }
         return pattern;
     }
