@@ -2,13 +2,14 @@ import streamlit as st
 import time
 import random
 
-# --- Page Configuration & Styling ---
+# --- Page Configuration & Global Styling ---
 st.set_page_config(page_title="Pattern Recognition Task", layout="centered")
 
 st.markdown("""
     <style>
     .block-container {
-        padding-top: 3rem;
+        max-width: 650px;
+        padding-top: 2.5rem;
         padding-bottom: 3rem;
     }
     .start-title {
@@ -30,8 +31,34 @@ st.markdown("""
         font-weight: 600;
         margin-bottom: 1.2rem;
     }
-    /* Input buttons style */
-    div.stButton > button {
+    
+    /* Playback HTML Grid */
+    .grid-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        width: 100%;
+        max-width: 480px;
+        margin: 1.5rem auto;
+    }
+    .pb-tile {
+        height: 110px;
+        border-radius: 8px;
+        border: 2px solid #333333;
+        background-color: #262730;
+        box-sizing: border-box;
+    }
+    .pb-tile-active {
+        height: 110px;
+        border-radius: 8px;
+        border: 2px solid #FFFFFF;
+        background-color: #FFFFFF;
+        box-shadow: 0 0 18px rgba(255, 255, 255, 0.95);
+        box-sizing: border-box;
+    }
+
+    /* Input Grid Native Buttons */
+    div[data-testid="stColumn"] > div > div.stButton > button {
         width: 100% !important;
         height: 110px !important;
         border-radius: 8px !important;
@@ -40,35 +67,19 @@ st.markdown("""
         color: transparent !important;
         transition: none !important;
     }
-    div.stButton > button:hover {
+    div[data-testid="stColumn"] > div > div.stButton > button:hover {
         border-color: #555555 !important;
         background-color: #262730 !important;
     }
-    /* Action buttons (start & reset) */
-    div[data-testid="stButton"] > button[kind="primary"] {
+
+    /* Primary Action Buttons (Start & Reset) */
+    div.stButton > button[kind="primary"] {
         height: 52px !important;
         color: #FFFFFF !important;
         font-size: 1.1rem !important;
         font-weight: 600 !important;
-    }
-    /* Base playback tile style matching the input buttons */
-    .pb-tile {
-        width: 100%;
-        height: 110px;
-        border-radius: 8px;
-        border: 2px solid #333333;
-        background-color: #262730;
-        box-sizing: border-box;
-    }
-    /* Active highlighted playback tile */
-    .pb-tile-active {
-        width: 100%;
-        height: 110px;
-        border-radius: 8px;
-        border: 2px solid #FFFFFF;
-        background-color: #FFFFFF;
-        box-shadow: 0 0 18px rgba(255, 255, 255, 0.95);
-        box-sizing: border-box;
+        background-color: #FF4B4B !important;
+        border: none !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -152,25 +163,25 @@ elif st.session_state.stage == "showing":
     active_sequence = st.session_state.master_pattern[:st.session_state.current_level]
     grid_slot = st.empty()
 
-    def draw_playback_grid(active_idx=-1):
-        with grid_slot.container():
-            for r in range(3):
-                cols = st.columns(3)
-                for c in range(3):
-                    idx = r * 3 + c
-                    with cols[c]:
-                        css_class = "pb-tile-active" if idx == active_idx else "pb-tile"
-                        st.markdown(f'<div class="{css_class}"></div>', unsafe_allow_html=True)
+    def generate_grid_html(active_idx=-1):
+        tiles_html = ""
+        for i in range(9):
+            cls = "pb-tile-active" if i == active_idx else "pb-tile"
+            tiles_html += f'<div class="{cls}"></div>'
+        return f'<div class="grid-container">{tiles_html}</div>'
 
-    draw_playback_grid(-1)
+    # Clear and render initial baseline state
+    grid_slot.markdown(generate_grid_html(-1), unsafe_allow_html=True)
     time.sleep(0.4)
 
+    # Flash each tile in the sequence cleanly
     for tile in active_sequence:
-        draw_playback_grid(tile)
+        grid_slot.markdown(generate_grid_html(tile), unsafe_allow_html=True)
         time.sleep(DISPLAY_FLASH_TIME)
-        draw_playback_grid(-1)
+        grid_slot.markdown(generate_grid_html(-1), unsafe_allow_html=True)
         time.sleep(DISPLAY_GAP_TIME)
 
+    # Clear before moving to input stage
     grid_slot.empty()
     st.session_state.stage = "input"
     st.session_state.last_click_time = time.time()
@@ -191,7 +202,7 @@ elif st.session_state.stage == "input":
         for c in range(3):
             idx = r * 3 + c
             with cols[c]:
-                if st.button(" ", key=f"input_{idx}", use_container_width=True):
+                if st.button(" ", key=f"input_tile_{idx}", use_container_width=True):
                     now = time.time()
                     interval = now - st.session_state.last_click_time
                     st.session_state.current_level_click_times.append(interval)
