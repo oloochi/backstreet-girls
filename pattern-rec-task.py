@@ -7,7 +7,30 @@ st.set_page_config(page_title="Pattern Recognition Task", layout="centered")
 
 st.markdown("""
     <style>
-    /* Force consistent 3x3 button dimensions across all states */
+    .block-container {
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+    }
+    .start-title {
+        text-align: center;
+        font-size: 2.3rem;
+        font-weight: 700;
+        margin-bottom: 1.2rem;
+    }
+    .start-instructions {
+        text-align: center;
+        font-size: 1.15rem;
+        line-height: 1.6;
+        color: #D1D5DB;
+        margin-bottom: 2rem;
+    }
+    .ready-prompt {
+        text-align: center;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1.2rem;
+    }
+    /* Input buttons style */
     div.stButton > button {
         width: 100% !important;
         height: 110px !important;
@@ -21,41 +44,53 @@ st.markdown("""
         border-color: #555555 !important;
         background-color: #262730 !important;
     }
-    /* Active highlight style for sequence playback */
-    div.stButton > button.tile-active {
-        background-color: #FFFFFF !important;
-        border-color: #FFFFFF !important;
-        box-shadow: 0 0 16px rgba(255, 255, 255, 0.9) !important;
+    /* Action buttons (start & reset) */
+    div[data-testid="stButton"] > button[kind="primary"] {
+        height: 52px !important;
+        color: #FFFFFF !important;
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
+    }
+    /* Base playback tile style matching the input buttons */
+    .pb-tile {
+        width: 100%;
+        height: 110px;
+        border-radius: 8px;
+        border: 2px solid #333333;
+        background-color: #262730;
+        box-sizing: border-box;
+    }
+    /* Active highlighted playback tile */
+    .pb-tile-active {
+        width: 100%;
+        height: 110px;
+        border-radius: 8px;
+        border: 2px solid #FFFFFF;
+        background-color: #FFFFFF;
+        box-shadow: 0 0 18px rgba(255, 255, 255, 0.95);
+        box-sizing: border-box;
     }
     </style>
 """, unsafe_allow_html=True)
 
 MAX_LEVEL = 10
+DISPLAY_FLASH_TIME = 0.65  # Seconds tile illuminates white
+DISPLAY_GAP_TIME = 0.20    # Seconds between flashes
 
-# Display timing calibration
-DISPLAY_FLASH_TIME = 0.65  # Seconds each tile illuminates white
-DISPLAY_GAP_TIME = 0.20    # Seconds between consecutive flashes
+# --- State Management ---
+def initialize_state(force_reset=False):
+    if force_reset or "stage" not in st.session_state:
+        st.session_state.stage = "intro"
+        st.session_state.master_pattern = [random.randint(0, 8) for _ in range(MAX_LEVEL)]
+        st.session_state.current_level = 1
+        st.session_state.user_input = []
+        st.session_state.trial_results = []
+        st.session_state.task_start_time = None
+        st.session_state.task_end_time = None
+        st.session_state.last_click_time = None
+        st.session_state.current_level_click_times = []
 
-# --- State Initialization ---
-if "stage" not in st.session_state:
-    st.session_state.stage = "intro"            # intro, showing, input, completed
-if "master_pattern" not in st.session_state:
-    st.session_state.master_pattern = [random.randint(0, 8) for _ in range(MAX_LEVEL)]
-if "current_level" not in st.session_state:
-    st.session_state.current_level = 1
-if "user_input" not in st.session_state:
-    st.session_state.user_input = []
-if "trial_results" not in st.session_state:
-    st.session_state.trial_results = []
-if "task_start_time" not in st.session_state:
-    st.session_state.task_start_time = None
-if "task_end_time" not in st.session_state:
-    st.session_state.task_end_time = None
-if "last_click_time" not in st.session_state:
-    st.session_state.last_click_time = None
-if "current_level_click_times" not in st.session_state:
-    st.session_state.current_level_click_times = []
-
+initialize_state()
 
 def record_level_submission():
     target_seq = st.session_state.master_pattern[:st.session_state.current_level]
@@ -80,28 +115,32 @@ def record_level_submission():
 
 
 # ==========================================
-# 1. INTRO / "ARE YOU READY" SCREEN
+# 1. INTRO / START SCREEN
 # ==========================================
 if st.session_state.stage == "intro":
-    st.title("Pattern Recognition Task")
-    st.write(
-        "A sequence of tiles will illuminate in white across the 3x3 grid one by one. "
-        "Watch closely, then reproduce the exact sequence in order by clicking the tiles."
+    st.markdown('<div class="start-title">Pattern Recognition Task</div>', unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="start-instructions">
+            A sequence of tiles will illuminate in white across the 3x3 grid one by one.<br>
+            Watch closely, then reproduce the exact sequence in order by clicking the tiles.<br><br>
+            Each round will display the previous pattern plus one new addition.<br>
+            The test will continue until all sequences are finished.
+        </div>
+        """,
+        unsafe_allow_html=True
     )
-    st.write(
-        "After each sequence, one additional tile is added to the pattern. "
-        "The test will continue until all sequences are complete."
-    )
-    st.markdown("---")
-    st.subheader("Are you ready?")
+    st.markdown('<div class="ready-prompt">Are you ready?</div>', unsafe_allow_html=True)
     
-    if st.button("Click Here to Begin", type="primary", use_container_width=True):
-        st.session_state.stage = "showing"
-        st.session_state.task_start_time = time.time()
-        st.session_state.current_level = 1
-        st.session_state.user_input = []
-        st.session_state.trial_results = []
-        st.rerun()
+    col_l, col_btn, col_r = st.columns([1, 2, 1])
+    with col_btn:
+        if st.button("Click Here to Begin", type="primary", use_container_width=True):
+            st.session_state.stage = "showing"
+            st.session_state.task_start_time = time.time()
+            st.session_state.current_level = 1
+            st.session_state.user_input = []
+            st.session_state.trial_results = []
+            st.rerun()
 
 # ==========================================
 # 2. PATTERN DEMONSTRATION PHASE
@@ -115,37 +154,23 @@ elif st.session_state.stage == "showing":
 
     def draw_playback_grid(active_idx=-1):
         with grid_slot.container():
-            # Inject dynamic CSS to illuminate the specific target tile white
-            if active_idx >= 0:
-                st.markdown(f"""
-                    <style>
-                    div.stButton > button[key="play_{active_idx}"] {{
-                        background-color: #FFFFFF !important;
-                        border-color: #FFFFFF !important;
-                        box-shadow: 0 0 18px rgba(255, 255, 255, 0.95) !important;
-                    }}
-                    </style>
-                """, unsafe_allow_html=True)
-
             for r in range(3):
                 cols = st.columns(3)
                 for c in range(3):
                     idx = r * 3 + c
                     with cols[c]:
-                        st.button(" ", key=f"play_{idx}", disabled=True)
+                        css_class = "pb-tile-active" if idx == active_idx else "pb-tile"
+                        st.markdown(f'<div class="{css_class}"></div>', unsafe_allow_html=True)
 
-    # Initial rest pause before sequence initiates
     draw_playback_grid(-1)
     time.sleep(0.4)
 
-    # Flash sequence
     for tile in active_sequence:
         draw_playback_grid(tile)
         time.sleep(DISPLAY_FLASH_TIME)
         draw_playback_grid(-1)
         time.sleep(DISPLAY_GAP_TIME)
 
-    # Clear playback container to prevent duplicate elements
     grid_slot.empty()
     st.session_state.stage = "input"
     st.session_state.last_click_time = time.time()
@@ -180,7 +205,7 @@ elif st.session_state.stage == "input":
                         st.rerun()
 
 # ==========================================
-# 4. TASK COMPLETION & STATS
+# 4. TASK COMPLETION & ADMIN RESULTS
 # ==========================================
 elif st.session_state.stage == "completed":
     st.title("Task Complete")
@@ -240,5 +265,11 @@ elif st.session_state.stage == "completed":
                 ],
                 use_container_width=True
             )
+
+        st.markdown("---")
+        if st.button("Reset for Next Participant", type="primary", use_container_width=True):
+            initialize_state(force_reset=True)
+            st.rerun()
+
     elif admin_pw:
         st.error("Incorrect password.")
