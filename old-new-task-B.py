@@ -195,14 +195,19 @@ if st.session_state.stage == "ready":
     if not st.session_state.trials:
         st.session_state.trials = generate_trial_schedule(WORD_LIST)
 
-    st.markdown(
-        """
-        <div style="text-align: center; margin-top: 100px; margin-bottom: 30px;">
-            <h1 style="font-size: 54px; font-weight: 700;">Are You Ready?</h1>
-        </div>
-        """,
-        unsafe_allow_html=True
+    st.title("Word Recall Task")
+
+    st.write("")
+    
+    st.info(
+        "**Task Instructions**\n\n"
+        "You will see a series of words, presented one at a time. For each word, decide whether you have seen it already during this session:\n\n"
+        "- Choose **Unfamiliar** if this word appeared for the **first time** during this test.\n"
+        "- Choose **Familiar** if this word has appeared **before** during this test.\n\n"
+        "Respond as quickly and as accurately as you can. The test will immediately begin once you hit the start button."
     )
+
+    st.caption("Are you ready?")
 
     _, col_btn, _ = st.columns([1, 1.2, 1])
     with col_btn:
