@@ -7,7 +7,8 @@ import time
 # 1. STIMULUS POOL CONFIGURATION
 # ==========================================
 # Insert your list of 75 unique words for this specific version/treatment below:
-WORD_LIST = "ball boss buck dirt door drop east flat gold hair hole lake mess mild nest park post rain ring yard anger beach bench brain bread brush chain chair clock crash dress flame flesh hotel knife mouth paint shirt snake train bottle bridge bucket butter canyon carpet closet danger drawer engine finger guitar jungle market pencil pocket silver spider ticket window blanket channel feather kitchen station village hospital mountain railroad sandwich stranger apartment machinery instrument television".split()
+# WORD_LIST = "ball boss buck dirt door drop east flat gold hair hole lake mess mild nest park post rain ring yard anger beach bench brain bread brush chain chair clock crash dress flame flesh hotel knife mouth paint shirt snake train bottle bridge bucket butter canyon carpet closet danger drawer engine finger guitar jungle market pencil pocket silver spider ticket window blanket channel feather kitchen station village hospital mountain railroad sandwich stranger apartment machinery instrument television".split()
+WORD_LIST = "ball boss dirt door gold hair lake nest park post rain ring yard beach brain bread chair clock dress hotel knife mouth paint shirt snake train bottle bridge bucket butter carpet guitar jungle market pencil pocket silver spider ticket window blanket feather kitchen station hospital mountain railroad sandwich apartment instrument".split()
 
 # Set to True for testing with dummy words if WORD_LIST is empty
 DEBUG_MODE = False
