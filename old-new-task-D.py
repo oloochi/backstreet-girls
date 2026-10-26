@@ -199,9 +199,9 @@ if st.session_state.stage == "ready":
 
     st.info(
         "**Task Instructions**\n\n"
-        "You will see a series of words, presented one at a time. For each word, decide if you have seen it during this session."
-        "- Choose **Unfamiliar** if this word appeared for the **first time** during this session."
-        "- Choose **Familiar** if this word has appeared **before** during this session."
+        "You will see a series of words, presented one at a time. For each word, decide if you have seen it during this session.\n\n"
+        "- Choose **Unfamiliar** if this word appeared for the **first time** during this session.\n"
+        "- Choose **Familiar** if this word has appeared **before** during this session.\n\n"
         "Respond as quickly and as accurately as you can. The test will immediately begin once you hit the start button"
     )
 
