@@ -354,7 +354,7 @@ TASK_HTML = """
 <script>
     const MAX_LEVEL = 10;
     const FLASH_DURATION = 500; // ms
-    const GAP_DURATION = 150;   // ms
+    const GAP_DURATION = 250;   // ms
 
     let masterPattern = [];
     let currentLevel = 1;
