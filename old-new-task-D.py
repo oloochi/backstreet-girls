@@ -197,6 +197,8 @@ if st.session_state.stage == "ready":
 
     st.title("Word Recall Task")
 
+    st.write("")
+    
     st.info(
         "**Task Instructions**\n\n"
         "You will see a series of words, presented one at a time. For each word, decide whether you have seen it already during this session:\n\n"
