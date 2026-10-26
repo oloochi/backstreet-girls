@@ -7,7 +7,8 @@ import time
 # 1. STIMULUS POOL CONFIGURATION
 # ==========================================
 # Insert your list of 75 unique words for this specific version/treatment below:
-WORD_LIST = "boat card coal dust fish frog iron lion meat moon path pipe roof rope sand seat ship song suit wind apple blade brick cabin chalk chest cliff cloud crown fruit grass heart horse metal money motor penny river stone wheel barrel basket camera castle circle cotton cradle donkey forest garage hammer island kettle monkey pillow rabbit rocket stream throat turkey bulletin curtain factory highway luggage surface calendar elevator platform sidewalk umbrella orchestra passenger locomotive restaurant".split()
+# WORD_LIST = "boat card coal dust fish frog iron lion meat moon path pipe roof rope sand seat ship song suit wind apple blade brick cabin chalk chest cliff cloud crown fruit grass heart horse metal money motor penny river stone wheel barrel basket camera castle circle cotton cradle donkey forest garage hammer island kettle monkey pillow rabbit rocket stream throat turkey bulletin curtain factory highway luggage surface calendar elevator platform sidewalk umbrella orchestra passenger locomotive restaurant".split()
+WORD_LIST = "boat card fish frog iron lion meat moon rope sand seat ship song apple brick cabin cloud crown fruit grass heart horse metal money river stone barrel basket camera castle circle forest garage hammer island monkey pillow rabbit rocket turkey curtain factory highway luggage calendar elevator platform umbrella passenger restaurant".split()
 
 # Set to True for testing with dummy words if WORD_LIST is empty
 DEBUG_MODE = False
