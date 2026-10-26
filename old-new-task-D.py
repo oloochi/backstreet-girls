@@ -203,6 +203,25 @@ if st.session_state.stage == "ready":
         """,
         unsafe_allow_html=True
     )
+    
+    st.markdown(
+        """
+        <div style="max-width: 650px; margin: 0 auto 35px auto; padding: 24px; background-color: #f8f9fa; border-radius: 12px; border: 1px solid #e9ecef; color: #212529;">
+            <h3 style="margin-top: 0; font-size: 20px; font-weight: 600; text-align: center;">Task Instructions</h3>
+            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 12px;">
+                You will be presented with a continuous series of words, shown one at a time. For each word, decide whether you have already seen it during this session:
+            </p>
+            <ul style="font-size: 15px; line-height: 1.6; padding-left: 20px; margin-bottom: 14px;">
+                <li><strong>Unfamiliar:</strong> Click this if it is the <em>first time</em> you are seeing the word in this test.</li>
+                <li><strong>Familiar:</strong> Click this if the word has <em>already appeared</em> earlier in this test.</li>
+            </ul>
+            <p style="font-size: 14px; color: #6c757d; margin-bottom: 0; text-align: center;">
+                Respond as quickly and accurately as possible. The test will run continuously once you begin.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     _, col_btn, _ = st.columns([1, 1.2, 1])
     with col_btn:
