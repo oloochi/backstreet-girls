@@ -375,16 +375,10 @@ TASK_HTML = """
     }
 
     // Prevents tile repeats > 2 times in a row
+    const FIXED_PATTERN = [1, 7, 2, 6, 8, 0, 4, 3, 5, 2];
+
     function generateMasterPattern() {
-        const pattern = [];
-        for (let i = 0; i < MAX_LEVEL; i++) {
-            let nextTile;
-            do {
-                nextTile = Math.floor(Math.random() * 9);
-            } while (i >= 2 && nextTile === pattern[i - 1] && nextTile === pattern[i - 2]);
-            pattern.push(nextTile);
-        }
-        return pattern;
+        return [...FIXED_PATTERN];
     }
 
     function startTask() {
